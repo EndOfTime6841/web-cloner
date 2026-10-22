@@ -1,0 +1,52 @@
+name: Web cloner 1.0
+on: 
+  workflow_dispatch:
+    inputs: 
+      website_url:
+        description: full web url
+        default: https://example.com/
+jobs: 
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history so git push works cleanly
+          fetch-depth: 0 
+
+      - name: Download Website with wget
+        run: |
+          # Create a folder inside the repo directory
+          mkdir -p downloaded-site
+          cd downloaded-site
+          
+          wget \
+            --recursive \
+            --level=5 \
+            --page-requisites \
+            --adjust-extension \
+            --convert-links \
+            --no-parent \
+            "${{ github.event.inputs.website_url }}"
+
+      - name: Commit and Push to Repo
+        run: |
+          # Configure Git Author using the standard GitHub Actions bot identity
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@://github.com"
+          
+          # Stage the files
+          git add downloaded-site/
+          
+          # Check if there are any changes to commit (prevents workflow failure if nothing changed)
+          if git diff-index --quiet HEAD; then
+            echo "No changes detected. Website matches the last download."
+          else
+            git commit -m "Automated update: Downloaded latest snapshot of ${{ github.event.inputs.website_url }}"
+            git push origin ${{ github.ref_name }}
+          fi
