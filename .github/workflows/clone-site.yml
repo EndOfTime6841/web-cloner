@@ -50,3 +50,7 @@ jobs:
             git commit -m "Automated update: Downloaded latest snapshot of ${{ github.event.inputs.website_url }}"
             git push origin ${{ github.ref_name }}
           fi
+      - name: Save URL to Wayback Machine Archive
+        run: |
+          # Send a request to the Archive.org "Save Page Now" API endpoint
+          curl -s -I "https://archive.org{{ github.event.inputs.website_url }}"
